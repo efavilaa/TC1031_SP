@@ -23,10 +23,10 @@ private:
 
 public:
     // methods that we can call from anywehre
-    bool read(string fileName);
+    bool read(string name);
     void sorting();
     void searchRecords();
-    bool store(string fileName);
+    bool store(string name);
     int size();
 };
 

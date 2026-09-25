@@ -21,12 +21,12 @@ int Keeper::monthToNumber(string month)
 }
 
 // Reading the file and storing it
-bool Keeper::read(string fileName)
+bool Keeper::read(string name)
 {
-    ifstream file(fileName);
+    ifstream file(name);
     if (!file.is_open())
     {
-        cout << "Crashed" << fileName << endl;
+        cout << "Crashed" << name << endl;
         return false;
     }
 
@@ -176,12 +176,12 @@ void Keeper::searchRecords()
 
 // Output
 // Complexity: O(n)
-bool Keeper::store(string fileName)
+bool Keeper::store(string name)
 {
-    ofstream file(fileName);
+    ofstream file(name);
     if (!file.is_open())
     {
-        cout << "Could not create " << fileName << endl;
+        cout << "Could not create " << name << endl;
         return false;
     }
     for (int i = 0; i < results.size(); i++)
@@ -189,7 +189,7 @@ bool Keeper::store(string fileName)
         file << results[i] << endl;
     }
     file.close();
-    cout << "Results saved to " << fileName << endl;
+    cout << "Results saved to " << name << endl;
     return true;
 }
 
