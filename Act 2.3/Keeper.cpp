@@ -142,19 +142,22 @@ void Keeper::searchRecords()
 {
     int start, end;
 
-    cout << "Start date (MMDDyyyy): ";
+    cout << "Start date (ddmmyyyy): ";
     cin >> start;
-    cout << "End date (MMDDyyyy): ";
+    cout << "End date (ddmmyyyy): ";
     cin >> end;
 
-    // we delete the year
-    int startMonthDay = start / 10000;
-    int endMonthDay = end / 10000;
+    // we delete the year and split day and month
+    int startDay = start / 1000000;
+    int startMonth = (start / 10000) % 100;
+    int endDay = end / 1000000;
+    int endMonth = (end / 10000) % 100;
     // swe use all seconds
-    int startKey = startMonthDay * 1000000;
-    int endKey = endMonthDay * 1000000 + 235959;
+    int startKey = startMonth * 100000000 + startDay * 1000000;
+    int endKey = endMonth * 100000000 + endDay * 1000000 + 235959;
 
-    if (start < 1010000 || end < 1010000 || startKey > endKey)
+    if (startDay < 1 || startDay > 31 || startMonth < 1 || startMonth > 12 ||
+        endDay < 1 || endDay > 31 || endMonth < 1 || endMonth > 12 || startKey > endKey)
     {
         cout << "Range does not exist" << endl;
         return;
