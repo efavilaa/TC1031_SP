@@ -4,7 +4,9 @@
 #include "Entry.h"
 using namespace std;
 
-// node of the doubly linked list
+//double linked list
+//w3e use a struct instead of two vectors because we want to keep them clean
+//major change since evidence 1
 struct Node
 {
     Entry data;
