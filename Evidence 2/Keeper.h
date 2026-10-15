@@ -18,6 +18,8 @@ struct Node
 
 class Keeper
 {
+    friend class Sorter;
+
 private:
     Node *head;
     Node *tail;
