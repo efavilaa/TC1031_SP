@@ -84,9 +84,9 @@ static Node *partition(Node *low, Node *high)
 
 // Decisiones de diseno:
 
-// - Iterativo con nuestra pila (Stack): en vez de llamarse a si mismo, guarda
-//   en la pila las direcciones del nodo inicial y final de cada particion pendiente.
-//   Asi tambien se evita desbordar la pila de llamadas con la recursion.
+/* - Iterativo con nuestra pila (Stack): en vez de llamarse a si mismo, guarda
+ en la pila las direcciones del nodo inicial y final de cada particion pendiente.
+    Asi tambien se evita desbordar la pila de llamadas con la recursion.*/
 
 // - Solo se meten a la pila particiones con 2 o mas nodos.
 
