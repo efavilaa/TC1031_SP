@@ -19,6 +19,7 @@ struct Node
 class Keeper
 {
     friend class Sorter;
+    friend class Searcher;
 
 private:
     Node *head;
