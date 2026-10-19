@@ -1,17 +1,6 @@
 #include "Sorter.h"
-#include <stack>
-#include <vector>
+#include "Stack.h"
 #include <utility>
-
-// Item junta cada registro con su IP y hora ya convertidas a número,
-// para comparar rápido sin reconvertir el texto en cada comparación.
-
-struct Item
-{
-    long long ip;
-    long long timestamp;
-    Entry entry;
-};
 
 // Convierte "a.b.c.d:puerto" en un numero comparable octeto por octeto (el puerto se ignora).
 
@@ -52,106 +41,88 @@ static long long ipToNumber(const string &ip)
 
 // Complejidad: O(1)
 
-static bool lessThan(const Item &a, const Item &b)
+static bool lessThan(const Entry &a, const Entry &b)
 {
-    if (a.ip != b.ip)
+    long long ipA = ipToNumber(a.ip);
+    long long ipB = ipToNumber(b.ip);
+    if (ipA != ipB)
     {
-        return a.ip < b.ip;
+        return ipA < ipB;
     }
     return a.timestamp < b.timestamp;
 }
 
-// Quicksort iterativo 
+// Particion entre dos nodos de la lista doblemente ligada (low y high).
+
+// Se usa el ultimo nodo (high) como pivote. i marca el ultimo nodo que ya
+// es menor que el pivote; j recorre de low hasta antes de high. Cuando j es
+// menor que el pivote, i avanza y se intercambian los datos de i y j.
+// Al final el pivote se pone despues de i, que es su lugar definitivo.
+
+// Solo se intercambian los datos (data) de los nodos, los punteros next y prev
+// no cambian, asi la lista sigue igual de conectada.
+
+// Complejidad: O(n) donde n es el tamano de la particion
+
+static Node *partition(Node *low, Node *high)
+{
+    Node *i = low->prev;
+    for (Node *j = low; j != high; j = j->next)
+    {
+        if (lessThan(j->data, high->data))
+        {
+            i = (i == nullptr) ? low : i->next;
+            swap(i->data, j->data);
+        }
+    }
+    i = (i == nullptr) ? low : i->next;
+    swap(i->data, high->data);
+    return i;
+}
+
+// Quicksort iterativo sobre la lista doblemente ligada
 
 // Decisiones de diseno:
 
-// - Iterativo con stack: es el requisito y evita desbordar la pila de llamadas
-//   con una recursion.
+// - Iterativo con nuestra pila (Stack): en vez de llamarse a si mismo, guarda
+//   en la pila las direcciones del nodo inicial y final de cada particion pendiente.
+//   Asi tambien se evita desbordar la pila de llamadas con la recursion.
 
-// - Particion de Hoare: maneja bien muchas llaves repetidas
-//   porque reparte los iguales entre ambos lados en vez de degradarse como Lomuto.
+// - Solo se meten a la pila particiones con 2 o mas nodos.
 
-// Complejidad: O(n log n) en promedio, O(n^2) en el peor caso porque el pivote esta en el medio
+// Complejidad: O(n log n) en promedio, O(n^2) en el peor caso
+// (cuando el pivote siempre queda en un extremo, ej. si la lista ya viene ordenada).
 
-static void quickSort(vector<Item> &items)
+void Sorter::sort(Keeper &keeper)
 {
-    if (items.size() < 2)
+    if (keeper.head == nullptr || keeper.head == keeper.tail)
     {
         return;
     }
 
-    // cada elemento de la pila es un rango (inicio, fin) que falta ordenar
-    stack<pair<int, int>> ranges;
-    ranges.push(make_pair(0, (int)items.size() - 1));
+    Stack pending;
+    pending.push(keeper.head, keeper.tail);
 
-    while (!ranges.empty())
+    Node *low;
+    Node *high;
+    while (pending.pop(low, high))
     {
-        pair<int, int> range = ranges.top();
-        ranges.pop();
-        int low = range.first;
-        int high = range.second;
-        if (low >= high)
+        if (low == high)
         {
             continue;
         }
 
-        Item pivot = items[low + (high - low) / 2];
-        int i = low;
-        int j = high;
-        while (i <= j)
+        Node *pivot = partition(low, high);
+
+        // lado izquierdo: de low hasta antes del pivote
+        if (pivot != low)
         {
-            while (lessThan(items[i], pivot))
-            {
-                i++;
-            }
-            while (lessThan(pivot, items[j]))
-            {
-                j--;
-            }
-            if (i <= j)
-            {
-                swap(items[i], items[j]);
-                i++;
-                j--;
-            }
+            pending.push(low, pivot->prev);
         }
-
-        
-        if (low < j)
+        // lado derecho: despues del pivote hasta high
+        if (pivot != high)
         {
-            ranges.push(make_pair(low, j));
+            pending.push(pivot->next, high);
         }
-        if (i < high)
-        {
-            ranges.push(make_pair(i, high));
-        }
-    }
-}
-
-// Copia la lista a un vector porque el quicksort necesita acceder rapido
-// a cualquier posicion y la linked list no lo permite.
-
-// Complejidad: O(n log n) en promedio (copiar y reescribir solo cuestan O(n)).
-
-void Sorter::sort(Keeper &keeper)
-{
-    vector<Item> items;
-    items.reserve(keeper.count);
-    for (Node *node = keeper.head; node != nullptr; node = node->next)
-    {
-        Item item;
-        item.ip = ipToNumber(node->data.ip);
-        item.timestamp = node->data.timestamp;
-        item.entry = node->data;
-        items.push_back(item);
-    }
-
-    quickSort(items);
-
-    size_t k = 0;
-    for (Node *node = keeper.head; node != nullptr; node = node->next)
-    {
-        node->data = items[k].entry;
-        k++;
     }
 }
