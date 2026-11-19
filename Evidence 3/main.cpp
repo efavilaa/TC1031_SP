@@ -22,7 +22,7 @@ int main()
     nextLine(in, line);
     stringstream(line) >> n >> e;
 
-    Graph g(n, false, true);
+    Graph g(n, true);
 
     for (int i = 0; i < n; i++)
     {
