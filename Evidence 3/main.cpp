@@ -47,5 +47,21 @@ int main()
     delete[] parent;
     delete[] path;
 
+    // Part 4
+    // we save the original network before the failure so we can compare it later
+    Network original;
+    g.saveNetwork(original);
+
+    int failA, failB;
+    if (g.getFailedCableInput(failA, failB))
+    {
+        g.failCable(failA, failB);
+        g.displayFailure(failA, failB);
+
+        // Part 5
+        g.restoreNetwork();
+        g.displayRestoration(original);
+    }
+
     return 0;
 }

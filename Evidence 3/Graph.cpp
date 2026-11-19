@@ -26,6 +26,20 @@ struct Edge
     int cost;
 };
 
+// Added for points 4 and 5: a saved copy of an installed network
+// so we can compare it with the network after a failure / restoration
+struct Network
+{
+    Edge *edges;
+    int count;
+    int cost;
+
+    Network() : edges(nullptr), count(0), cost(0) {}
+    ~Network() { delete[] edges; }
+    Network(const Network &) = delete;
+    Network &operator=(const Network &) = delete;
+};
+
 class Graph
 {
 private:
@@ -410,6 +424,209 @@ public:
         }
         cout << endl
              << "Total cost: " << total << endl
+             << endl;
+    }
+
+    // POINT 4. Connection failure
+
+    void printEdge(const Edge &e) const
+    {
+        cout << "  " << nodes[e.a].name << " - " << nodes[e.b].name << " : " << e.cost << endl;
+    }
+
+    // we copy the installed network (mst) so we can compare it later
+    void saveNetwork(Network &out) const
+    {
+        delete[] out.edges;
+        out.edges = new Edge[mstCount];
+        for (int i = 0; i < mstCount; i++)
+            out.edges[i] = mst[i];
+        out.count = mstCount;
+        out.cost = mstCost;
+    }
+
+    // position of the cable a-b inside a list of cables, -1 if it is not there (order of a and b doesn't matter)
+    static int findEdge(const Edge *list, int count, int a, int b)
+    {
+        for (int i = 0; i < count; i++)
+            if ((list[i].a == a && list[i].b == b) || (list[i].a == b && list[i].b == a))
+                return i;
+        return -1;
+    }
+
+    // we show the installed cables and ask which one fails, only installed cables can fail
+    bool getFailedCableInput(int &a, int &b) const
+    {
+        cout << "4. Connection Failure" << endl;
+        if (mstCount == 0)
+        {
+            cout << "There are no installed cables" << endl
+                 << endl;
+            return false;
+        }
+        cout << "Installed cables:" << endl;
+        for (int i = 0; i < mstCount; i++)
+            printEdge(mst[i]);
+
+        string x, y;
+        while (true)
+        {
+            cout << "Failed cable (building1 building2): ";
+            if (!(cin >> x >> y))
+                return false;
+            a = indexOf(x);
+            b = indexOf(y);
+            if (a == -1 || b == -1)
+                cout << "Building does not exist" << endl;
+            else if (findEdge(mst, mstCount, a, b) == -1)
+                cout << "There is no installed cable between " << x << " and " << y << endl;
+            else
+                return true;
+        }
+    }
+
+    // the cable breaks: we take it out of the installed network and we turn it "off" in the matrix
+    // (we don't delete it) so it is never used again, not in the restoration and not in the expansion
+    void failCable(int a, int b)
+    {
+        int k = findEdge(mst, mstCount, a, b);
+        if (k == -1)
+            return;
+        mstCost -= mst[k].cost;
+        for (int i = k; i < mstCount - 1; i++)
+            mst[i] = mst[i + 1];
+        mstCount--;
+        removeEdge(nodes[a].name, nodes[b].name);
+    }
+
+    // which buildings can still communicate: we use union-find (same as kruskal) with the cables that still work
+    // at the end group[i] = the root of building i, buildings with the same root can communicate
+    // returns how many groups there are (1 = the whole campus is connected)
+    int findGroups(int *group)
+    {
+        int *rank = new int[N];
+        for (int i = 0; i < N; i++)
+        {
+            group[i] = i;
+            rank[i] = 0;
+        }
+        for (int i = 0; i < mstCount; i++)
+            unite(group, rank, mst[i].a, mst[i].b);
+
+        int groups = 0;
+        for (int i = 0; i < N; i++)
+            if (find(group, i) == i)
+                groups++;
+
+        delete[] rank;
+        return groups;
+    }
+
+    // Print each group of buildings that can talk to each other
+    void displayGroups(const int *group) const
+    {
+        int count = 0;
+        for (int root = 0; root < N; root++)
+        {
+            if (group[root] != root)
+                continue;
+            cout << "  Group " << ++count << ": ";
+            bool first = true;
+            for (int i = 0; i < N; i++)
+            {
+                if (group[i] == root)
+                {
+                    if (!first)
+                        cout << ", ";
+                    cout << nodes[i].name;
+                    first = false;
+                }
+            }
+            cout << endl;
+        }
+    }
+
+    // Print
+    void displayFailure(int a, int b)
+    {
+        int *group = new int[N];
+        int groups = findGroups(group);
+
+        cout << "Failed cable: " << nodes[a].name << " - " << nodes[b].name
+             << " : " << matrix[a][b].weight << endl;
+        cout << "Cables still working:" << endl;
+        for (int i = 0; i < mstCount; i++)
+            printEdge(mst[i]);
+        cout << "Buildings that can still communicate:" << endl;
+        displayGroups(group);
+        if (groups == 1)
+            cout << "The entire campus remains connected" << endl;
+        else
+            cout << "The campus is NOT connected anymore (" << groups << " separated groups)" << endl;
+        cout << endl;
+
+        delete[] group;
+    }
+
+    // POINT 5. Restoring the network
+
+    // we run kruskal again with every connection that is still available
+    // the failed cable is "off" so kruskal doesn't see it (sortEdgesByCost only takes active cells)
+    void restoreNetwork()
+    {
+        kruskalMST();
+    }
+
+    // Print the new network and compare it with the original one
+    void displayRestoration(const Network &original)
+    {
+        cout << "5. Restoring the Network" << endl;
+
+        bool possible = (mstCount == N - 1);
+        if (possible)
+            cout << "New installed network:" << endl;
+        else
+            cout << "Restoration impossible: there is no available connection that joins these groups" << endl
+                 << "Best network we can install:" << endl;
+        for (int i = 0; i < mstCount; i++)
+            printEdge(mst[i]);
+        cout << "Total cost: " << mstCost << endl;
+
+        if (!possible)
+        {
+            int *group = new int[N];
+            findGroups(group);
+            cout << "Buildings that stay separated:" << endl;
+            displayGroups(group);
+            delete[] group;
+        }
+
+        // comparison: cables that stay, cables that are gone and cables that are new
+        cout << endl
+             << "Comparison with the original network:" << endl;
+        cout << "Cables kept:" << endl;
+        for (int i = 0; i < original.count; i++)
+            if (findEdge(mst, mstCount, original.edges[i].a, original.edges[i].b) != -1)
+                printEdge(original.edges[i]);
+        cout << "Cables removed:" << endl;
+        for (int i = 0; i < original.count; i++)
+            if (findEdge(mst, mstCount, original.edges[i].a, original.edges[i].b) == -1)
+                printEdge(original.edges[i]);
+        cout << "Cables added:" << endl;
+        bool added = false;
+        for (int i = 0; i < mstCount; i++)
+            if (findEdge(original.edges, original.count, mst[i].a, mst[i].b) == -1)
+            {
+                printEdge(mst[i]);
+                added = true;
+            }
+        if (!added)
+            cout << "  (none)" << endl;
+
+        int diff = mstCost - original.cost;
+        cout << "Original cost: " << original.cost << endl
+             << "New cost: " << mstCost << endl
+             << "Difference: " << (diff >= 0 ? "+" : "") << diff << endl
              << endl;
     }
 };
