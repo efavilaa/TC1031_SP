@@ -5,78 +5,47 @@
 #include <climits>
 using namespace std;
 #include "Graph.cpp"
+#include "Reader.cpp"
 
 int main()
 {
+
+    // Part 1
     string fileName = "test+.txt";
-    ifstream in(fileName);
-    if (!in)
+    Reader reader(fileName);
+    if (!reader.isOpen())
     {
         cout << "Could not open " << fileName << endl;
         return 1;
     }
 
-    string line;
+    Graph g(reader.readSize(), true);
+    reader.readNetwork(g);
 
-    int n, e;
-    nextLine(in, line);
-    stringstream(line) >> n >> e;
-
-    Graph g(n, true);
-
-    for (int i = 0; i < n; i++)
-    {
-        nextLine(in, line);
-        string name;
-        int x, y;
-        stringstream(line) >> name >> x >> y;
-        g.setNode(i, name, x, y);
-    }
-
-    for (int i = 0; i < e; i++)
-    {
-        nextLine(in, line);
-        string a, b;
-        int cost;
-        stringstream(line) >> a >> b >> cost;
-        g.addEdge(a, b, cost);
-    }
-
-    cout << "Initial network" << endl;
+    cout << "1. The Campus Network" << endl;
     g.printNodes();
     g.printMatrix();
 
-    string failA, failB;
-    if (nextLine(in, line))
-    {
-        stringstream(line) >> failA >> failB;
-        g.removeEdge(failA, failB);
-        cout << "After failure " << failA << "-" << failB << " " << endl;
-        g.printMatrix();
-    }
+    // Part 2
 
-    if (nextLine(in, line))
-    {
-        string name;
-        int x, y;
-        stringstream(line) >> name >> x >> y;
-        g.addNode(name, x, y);
+    // krukal
+    g.kruskalMST();
+    g.displayMST();
 
-        int k = 0;
-        if (nextLine(in, line))
-            stringstream(line) >> k;
-        for (int i = 0; i < k; i++)
-        {
-            nextLine(in, line);
-            string a, b;
-            int cost;
-            stringstream(line) >> a >> b >> cost;
-            g.addEdge(a, b, cost);
-        }
-        cout << "=== After adding " << name << " ===" << endl;
-        g.printNodes();
-        g.printMatrix();
-    }
+    // Part 3
+    int start, dest;
+    g.getBuildingInput(start, dest);
+
+    int *parent = new int[g.size()];
+    int *path = new int[g.size()];
+
+    // BFS
+    g.BFS(start, dest, parent);
+    int length = g.reconstructPath(parent, start, dest, path);
+    g.displayPath(path, length);
+
+    delete[] parent;
+    delete[] path;
 
     return 0;
 }

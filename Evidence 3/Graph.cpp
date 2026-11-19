@@ -198,7 +198,7 @@ public:
                 else if (matrix[i][j].weight != -1)
                     cout << "off\t";
                 else
-                    cout << "-\t";
+                    cout << "*\t";
             }
             cout << endl;
         }
@@ -232,7 +232,6 @@ public:
         }
     }
 
-    //!!ETHIEL CHECK returns the representative (root) of the set that contains the building; compresses the path so later lookups are faster
     int find(int *parent, int building)
     {
         if (parent[building] != building)
@@ -240,7 +239,9 @@ public:
         return parent[building];
     }
 
-    //!!ETHIEL CHECK joins the sets of two buildings using union by rank; returns false if they were already in the same set (that edge would create a cycle)
+    // we make sure we don't create a cycle
+    // first find the roots (above) because if we have the same root, connecting would create a cycle
+    // if not, we connect
     bool unite(int *parent, int *rank, int building1, int building2)
     {
         int r1 = find(parent, building1);
@@ -259,7 +260,8 @@ public:
         return true;
     }
 
-    //!!ETHIEL CHECK builds the minimum spanning tree: goes through the edges from cheapest to most expensive and keeps each one that connects two different sets, until N-1 edges are chosen
+    // we sort all the edges from cheapes to most expensive, use the cheap one first, and if able we add them
+
     void kruskalMST()
     {
         sortEdgesByCost();
@@ -290,29 +292,124 @@ public:
         delete[] rank;
     }
 
-    //!!ETHIEL CHECK prints the edges chosen by Kruskal and the total installation cost
+    // We print
     void displayMST() const
     {
-        cout << "Minimum Spanning Tree (Kruskal)" << endl;
+        cout << "2. Installation Costs" << endl;
         for (int i = 0; i < mstCount; i++)
             cout << nodes[mst[i].a].name << " - " << nodes[mst[i].b].name
                  << " : " << mst[i].cost << endl;
         cout << "Total cost: " << mstCost << endl;
         if (mstCount < N - 1)
-            cout << "Warning: network is disconnected, this is a spanning forest" << endl;
+            cout << "spanning forest error" << endl;
         cout << endl;
     }
-};
 
-bool nextLine(ifstream &in, string &line)
-{
-    while (getline(in, line))
+    // POINT 3. Communication between buildings, aka BFS
+
+    // We check from where to where
+    void getBuildingInput(int &start, int &dest) const
     {
-        if (!line.empty() && line.back() == '\r')
-            line.pop_back();
-        if (line.empty() || line[0] == '#')
-            continue;
-        return true;
+        string a, b;
+        cout << "3. Communication Between Buildings" << endl;
+        do
+        {
+            cout << "Starting building: ";
+            cin >> a;
+            start = indexOf(a);
+            if (start == -1)
+                cout << "Building " << a << " does not exist" << endl;
+        } while (start == -1);
+        do
+        {
+            cout << "Destination building: ";
+            cin >> b;
+            dest = indexOf(b);
+            if (dest == -1)
+                cout << "Building " << b << " does not exist" << endl;
+        } while (dest == -1);
     }
-    return false;
-}
+
+    bool BFS(int start, int dest, int *parent) const
+    {
+        // create tree from mst
+        bool **tree = new bool *[N];
+        for (int i = 0; i < N; i++)
+        {
+            tree[i] = new bool[N];
+            for (int j = 0; j < N; j++)
+                tree[i][j] = false;
+        }
+        for (int i = 0; i < mstCount; i++)
+        {
+            tree[mst[i].a][mst[i].b] = true;
+            tree[mst[i].b][mst[i].a] = true;
+        }
+
+        // Not visited yet
+        for (int i = 0; i < N; i++)
+            parent[i] = -1;
+        parent[start] = start;
+
+        // Since we don't repeat building max size is N, and we add the route to the queue (FIFO)
+        int *queue = new int[N];
+        int front = 0, back = 0;
+        queue[back++] = start;
+
+        while (front < back && parent[dest] == -1)
+        {
+            int cur = queue[front++];
+            for (int next = 0; next < N; next++)
+            {
+                if (tree[cur][next] && parent[next] == -1)
+                {
+                    parent[next] = cur;
+                    queue[back++] = next;
+                }
+            }
+        }
+
+        for (int i = 0; i < N; i++)
+            delete[] tree[i];
+        delete[] tree;
+        delete[] queue;
+
+        return parent[dest] != -1;
+    }
+
+    // we reconstruct the oath from destination to back and then again to get the correct order
+    int reconstructPath(int *parent, int start, int dest, int *path) const
+    {
+        int length = 0;
+        for (int cur = dest; cur != start; cur = parent[cur])
+            path[length++] = cur;
+        path[length++] = start;
+
+        for (int i = 0; i < length / 2; i++)
+        {
+            int tmp = path[i];
+            path[i] = path[length - 1 - i];
+            path[length - 1 - i] = tmp;
+        }
+        return length;
+    }
+
+    // Print
+    void displayPath(int *path, int length) const
+    {
+        int total = 0;
+        cout << "Route: ";
+        for (int i = 0; i < length; i++)
+        {
+            cout << nodes[path[i]].name;
+            if (i < length - 1)
+            {
+                cout << " -> ";
+                total += matrix[path[i]][path[i + 1]].weight;
+            }
+        }
+        cout << endl
+             << "Total cost: " << total << endl
+             << endl;
+    }
+};

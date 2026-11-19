@@ -19,16 +19,3 @@ C E 5
 D E 2
 D F 7
 E F 4
-
-# FAILED CONNECTION
-C E
-
-# NEW NODE
-G 6 8
-
-# NEW EDGES
-4
-G A 10
-G B 3
-G D 2
-G F 6
