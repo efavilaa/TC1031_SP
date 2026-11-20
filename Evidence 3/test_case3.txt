@@ -1,28 +1,24 @@
-5 6
+5 3
 
 # NODES
 A 0 0
-B 2 2
-C 4 0
-D 6 2
-E 9 2
+B 3 0
+C 6 0
+D 1 4
+E 6 4
 
 # EDGES
 A B 2
 B C 3
-A C 4
-C D 1
-B D 5
-D E 6
+D E 5
 
 # FAILED CONNECTION
-D E
+B C
 
 # NEW NODE
-F 8 5
+F 5 7
 
 # NEW EDGES
-3
-F E 3
-F B 4
-F A 9
+2
+F D 1
+F C 9

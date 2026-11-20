@@ -1,0 +1,27 @@
+5 5
+
+# NODES
+Lib 0 0
+Eng 4 0
+Med 4 4
+Gym 0 4
+Dorm 8 2
+
+# EDGES
+Gym Med 2
+Gym Lib 6
+Med Eng 4
+Lib Eng 3
+Eng Dorm 5
+
+# FAILED CONNECTION
+Eng Dorm
+
+# NEW NODE
+Lab 8 6
+
+# NEW EDGES
+3
+Lab Dorm 4
+Lab Med 7
+Eng Dorm 1
