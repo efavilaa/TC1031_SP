@@ -6,12 +6,13 @@
 using namespace std;
 #include "Graph.cpp"
 #include "Reader.cpp"
+#include "Expansion.cpp"
 
 int main()
 {
 
     // Part 1
-    string fileName = "test+.txt";
+    string fileName = "test_fix.txt";
     Reader reader(fileName);
     if (!reader.isOpen())
     {
@@ -49,8 +50,8 @@ int main()
 
     // Part 4
     // we save the original network before the failure so we can compare it later
-    Network original;
-    g.saveNetwork(original);
+    Stage original, restored, expanded;
+    saveStage(g, original, "Original network");
 
     int failA, failB;
     if (g.getFailedCableInput(failA, failB))
@@ -60,8 +61,21 @@ int main()
 
         // Part 5
         g.restoreNetwork();
-        g.displayRestoration(original);
+        g.displayRestoration(original.net);
     }
+    saveStage(g, restored, "After failure and restoration");
+
+    // Part 6
+    NewBuilding building;
+    readNewBuilding(fileName, building);
+    if (expandCampus(g, building))
+    {
+        saveStage(g, expanded, "After adding " + building.name);
+        displayExpansion(g, restored, expanded);
+    }
+
+    // Part 7
+    compareNetworks(g, original, restored, expanded);
 
     return 0;
 }
